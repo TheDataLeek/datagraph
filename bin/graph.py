@@ -48,7 +48,7 @@ def main():
             graph.add_edge(from_node, to_node)
         print 'Edges set'
         print 'Creating Graph'
-        position = nx.graphviz_layout(graph)
+        position = nx.spring_layout(graph)
         for item in position:
             position[item] *= 10
         nx.draw_networkx(graph,
