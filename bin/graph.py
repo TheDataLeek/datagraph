@@ -3,6 +3,7 @@
 IMPORT_FLAG = False
 
 try:
+    import csv
     import subprocess
     import argparse
     import sys
@@ -29,38 +30,11 @@ def main():
         print len(edge_list)
 
     if IMPORT_FLAG == False and args.networkx is True:
-        graph = nx.Graph()
-        print 'Initializing'
-        size_list = []
-        clean_node_list = []
-        for item in node_list:
-            nodesize = 300
-            for edge in edge_list:
-                if item == edge[1]:
-                    nodesize += 100
-            size_list.append(nodesize)
-            clean_node_list.append(os.path.basename(item))
-        graph.add_nodes_from(clean_node_list)
-        print 'Nodes set'
-        for item in edge_list:
-            from_node = os.path.basename(item[1])
-            to_node = os.path.basename(item[0])
-            graph.add_edge(from_node, to_node)
-        print 'Edges set'
-        print 'Creating Graph'
-        position = nx.spring_layout(graph)
-        for item in position:
-            position[item] *= 10
-        nx.draw_networkx(graph,
-                         pos=position,
-                         font_size=10,
-                         node_size=size_list)
-        print 'Drawing Graph'
-        plt.show()
-        print 'DONE'
+        create_networkx(node_list, edge_list, args)
     elif IMPORT_FLAG == False and args.graphviz is True:
-        directorygraph = create_graph(node_list, edge_list, args)
+        directorygraph = create_graphviz(node_list, edge_list, args)
         directorygraph.write('directory.dot')
+        directorygraph.write_png('directory.png')
     elif IMPORT_FLAG:
         print 'ERROR - The library pydot is not installed. Writing to file'
         write_file = open('graph.txt', mode='w')
@@ -75,7 +49,46 @@ def main():
         write_file.write(str(edge_list))
         write_file.close()
 
-def create_graph(node_list, edge_list, args):
+        csv_file = open('graph.csv', mode='w')
+        graph_writer = csv.writer(csv_file, delimiter=',')
+        for item in edge_list:
+            graph_writer.writerow(item)
+        csv_file.close()
+
+
+def create_networkx(node_list, edge_list, args):
+    graph = nx.Graph()
+    print 'Initializing'
+    size_list = []
+    clean_node_list = []
+    for item in node_list:
+        nodesize = 300
+        for edge in edge_list:
+            if item == edge[1]:
+                nodesize += 100
+        size_list.append(nodesize)
+        clean_node_list.append(os.path.basename(item))
+    graph.add_nodes_from(clean_node_list)
+    print 'Nodes set'
+    for item in edge_list:
+        from_node = os.path.basename(item[1])
+        to_node = os.path.basename(item[0])
+        graph.add_edge(from_node, to_node)
+    print 'Edges set'
+    print 'Creating Graph'
+    position = nx.spring_layout(graph)
+    for item in position:
+        position[item] *= 10
+    nx.draw_networkx(graph,
+                     pos=position,
+                     font_size=10,
+                     node_size=size_list)
+    print 'Drawing Graph'
+    plt.show()
+    print 'DONE'
+
+
+def create_graphviz(node_list, edge_list, args):
 
     directorygraph = pydot.Dot(graph_type='digraph', overlap='false')
 
@@ -85,7 +98,7 @@ def create_graph(node_list, edge_list, args):
             if item == edge[1]:
                 node_size += 0.1
         node_name = os.path.basename(item)
-        if node_name == '':
+        if node_name in ['', ' ']:
             pass
         else:
             if os.path.islink(item):
@@ -109,10 +122,12 @@ def create_graph(node_list, edge_list, args):
 
     for item in edge_list:
         root = os.path.basename(item[1])
-        if os.path.basename(item[1]) == '':
+        end  = os.path.basename(item[0])
+        if (os.path.basename(item[1]) == ''):
             root = args.directory
-        edge = pydot.Edge(root,
-                          os.path.basename(item[0]))
+        if (os.path.basename(item[0]) == ''):
+            pass
+        edge = pydot.Edge(root, end)
         directorygraph.add_edge(edge)
 
     return directorygraph
